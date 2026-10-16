@@ -1,0 +1,8 @@
+{
+  "line_items": {
+    "Revenue": "1250000.00",
+    "Expenses": "875000.00",
+    "Net Income": "375000.00"
+  },
+  "expected_fields": ["revenue", "expenses", "net_income"]
+}

@@ -25,7 +25,7 @@ class LLMResponse:
 class LLMClient:
     """A thin, swappable wrapper over Gemini with a deterministic mock mode."""
 
-    def __init__(self, model: str = "gemini-1.5-flash", mode: str | None = None):
+    def __init__(self, model: str = "gemini-3.6-flash", mode: str | None = None):
         self.model = model
         # mode resolution order: explicit arg > env > default "mock"
         self.mode = (mode or os.getenv("LLM_MODE", "mock")).lower()
@@ -67,7 +67,20 @@ class LLMClient:
             messages.append(SystemMessage(content=system))
         messages.append(HumanMessage(content=prompt))
         result = self._client.invoke(messages)
-        return LLMResponse(text=result.content, raw=result)
+        content = result.content
+        # Some Gemini models return content as a list of parts rather than a
+        # single string; normalize to a plain string so downstream code (regex
+        # guardrails, JSON parsing) always receives text.
+        if isinstance(content, list):
+            parts = []
+            for part in content:
+                if isinstance(part, str):
+                    parts.append(part)
+                elif isinstance(part, dict) and "text" in part:
+                    parts.append(part["text"])
+            content = "".join(parts)
+        return LLMResponse(text=str(content), raw=result)
+
 
     # ------------------------------------------------------------------
     # Mock implementation
